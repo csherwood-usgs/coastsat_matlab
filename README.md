@@ -1,6 +1,6 @@
-# coastcam_matlab
-Contains my Matlab code for working with coastline
+# coastsat_matlab
+Contains my Matlab code for working with coastlines provided by Sean Vitousek
 
-This repo resides in /src/CoastCam_Matlab
+This repo resides in ../src/coastsat_matlab
 
-List of code:
+
