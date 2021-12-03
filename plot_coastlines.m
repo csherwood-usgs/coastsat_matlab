@@ -1,5 +1,5 @@
 
-load('transects_with_shorelines_final.mat')
+load('c:\crs\proj\2020_CALO\FloSup_cosatlines\transects_with_shorelines_final.mat')
 % TODO - automate lookup into list of littoral cells.
 % For now: 
 % index into all Core Banks transects
