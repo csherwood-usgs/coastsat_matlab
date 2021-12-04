@@ -28,6 +28,13 @@ end
 dxy = diff(utmxy_Y0);
 % alongshore distance in km
 dalong = [0; cumsum(sqrt( dxy(:,1).^2 + dxy(:,2).^2 ))]/1000.;
+%% Save the UTM coords of Y0
+fnutmY0 = sprintf('%s_Y0.csv',lc_name)
+fid = fopen(fnutmY0,'w');
+for i=1:length(idx)
+    fprintf(fid,'%12.2f,%12.2f\n',utmxy_Y0(i,:));
+end
+fclose(fid);
 %% Calculate some shoreline location statistics for entire time
 % declare an array for statistics
 % stats = [mean, std, 25th, 50th, 75th, slope, std.err.slope, r2]
@@ -201,18 +208,18 @@ ylabel('<- Erosion (m/y) Depostion ->')
 h = colorbar;
 set(get(h,'label'),'string','Regression coefficient {\itr}^2');
 title(lc_name)
-%%
+%% Shoreline change rate for various time intervals
 ts = datestr(dnstart)
 figure(3); clf
 plot(dalong, zeros(size(idx)),'--k')
 hold on
-
 for k=1:length(dnstart)-1
-    hk(k) = plot(dalong,stats_t(k,:,6),'-','linewidth',2,'color',reds(k+2,:));
+    hk(k) = plot(dalong,stats_t(k,:,6),'-','linewidth',2,'color',purples(k+1,:));
 end
-ylim([-30,30])
+ylim([-10,10])
 xlabel('Alongshore distance (km)')
 ylabel('<- Erosion (m/y) Depostion ->')
-title(lc_name)
+tss = sprintf('%s, dt=%d y',lc_name,dt)
+title(tss)
 legend(hk,ts(1:nint,:),'location','northwest')
 shg
