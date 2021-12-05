@@ -29,12 +29,25 @@ dxy = diff(utmxy_Y0);
 % alongshore distance in km
 dalong = [0; cumsum(sqrt( dxy(:,1).^2 + dxy(:,2).^2 ))]/1000.;
 %% Save the UTM coords of Y0
+% These are in UTM zone 17N
 fnutmY0 = sprintf('%s_Y0.csv',lc_name)
 fid = fopen(fnutmY0,'w');
 for i=1:length(idx)
     fprintf(fid,'%12.2f,%12.2f\n',utmxy_Y0(i,:));
 end
 fclose(fid);
+%% write out Y0 start locations for bounding boxes
+bbx_list = unique([transects(idx).coastsat_bbox_number])';
+% and make an array of bbox start points in dalong coords
+dalong_bbox = nan*ones(length(bbx_list),2);
+for i =1:length(bbx_list)
+    ibx = find([transects(idx).coastsat_bbox_number]==bbx_list(i),1,'first');
+    dalong_bbox(i,:) = [bbx_list(i), dalong(ibx)];
+    fbbx = sprintf('bbx%05d.csv',bbx_list(i))
+    fid = fopen(fbbx,'w');
+    fprintf(fid,'%12.2f,%12.2f\n',utmxy_Y0(ibx,:))
+    fclose(fid);
+end
 %% Calculate some shoreline location statistics for entire time
 % declare an array for statistics
 % stats = [mean, std, 25th, 50th, 75th, slope, std.err.slope, r2]
@@ -118,18 +131,19 @@ edate_t = nan*ones(nint,length(idx),1);
 
 LTE2pct_t = nan*ones(nint,5);
 
-% loop throught time intervals
+% loop through time intervals
 for k = 1:length(dnstart)-1
     fprintf(1,'%s to %s\n',datestr(dnstart(k)),datestr(dnstart(k+1)))
 
     % loop through transects and calc stats
     for i=1:length(idx)
         %jdx = find([transects(idx(i)).SAT(:)]==1); % satellite shorelines
+        % TODO - This does not exclude non-satellite data
         jdx = [find([transects(idx(i)).t(:)]>=dnstart(k),  1,'first'):...
                find([transects(idx(i)).t(:)]< dnstart(k+1),1,'last')]; %time interval
         N = length(jdx);
         %fprintf(1,'%s to %s: N=%d\n',datestr(dnstart(k)),datestr(dnstart(k+1)),n)
-        if(N>0)
+        if(N>=2)
             Y = [transects(idx(i)).Y(jdx)];
             t = [transects(idx(i)).t(jdx)];
             n_t(k,i) = N;
@@ -169,7 +183,7 @@ for k = 1:length(dnstart)-1
                 transect2utm( transects(idx(i)).x_on, transects(idx(i)).y_on, ...
                 stats_t(k,i,5), transects(idx(i)).angle );
         else
-            n_t(k,i)=0;
+            n_t(k,i)=N;
             stats_t(k,i,:)=nan;
             utmxstats_t(k,i,:)=nan;
             utmystats_t(k,i,:)=nan;
@@ -194,10 +208,12 @@ xlabel('UTM x (m)')
 ylabel('UTM y (m)')
 title(lc_name)
 shg
-%%
+%% Plot LTER (from satellites only)
 figure(2); clf
 plot(dalong, zeros(size(idx)),'--k')
 hold on
+plot(dalong_bbox(:,2),zeros(size(dalong_bbox(:,2))),'xr')
+
 plot(dalong,stats(:,6)+stats(:,7),'-','color',purples(3,:))
 plot(dalong,stats(:,6)-stats(:,7),'-','color',purples(3,:))
 
@@ -213,6 +229,7 @@ ts = datestr(dnstart)
 figure(3); clf
 plot(dalong, zeros(size(idx)),'--k')
 hold on
+plot(dalong_bbox(:,2),zeros(size(dalong_bbox(:,2))),'xr')
 for k=1:length(dnstart)-1
     hk(k) = plot(dalong,stats_t(k,:,6),'-','linewidth',2,'color',purples(k+1,:));
 end
@@ -223,3 +240,29 @@ tss = sprintf('%s, dt=%d y',lc_name,dt)
 title(tss)
 legend(hk,ts(1:nint,:),'location','northwest')
 shg
+
+%% Plot time s
+% series of shorelines and fit for a single transect
+i = 280 % pick a transect number in idx
+figure(4); clf
+% loop through time intervals
+for k = 1:length(dnstart)-1
+    jdx = [find([transects(idx(i)).t(:)]>=dnstart(k),  1,'first'):...
+        find([transects(idx(i)).t(:)]< dnstart(k+1),1,'last')]; %time interval
+    N = length(jdx);
+
+    Y = [transects(idx(i)).Y(jdx)];
+    t = [transects(idx(i)).t(jdx)];
+    % linear fit to shoreline change
+    [a,b,r2,sa,sb,hdot]=lsfit(t,Y,1);
+    hold on
+end
+jdx = find([transects(idx(i)).SAT(:)]==1); % satellite shorelines
+
+Y = [transects(idx(i)).Y(jdx)];
+t = [transects(idx(i)).t(jdx)];
+% linear fit to shoreline change
+[a,b,r2,sa,sb,hdot]=lsfit(t,Y,1);
+datetick
+ylabel('<- Erosion (m) Depostion ->')
+
