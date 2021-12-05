@@ -241,7 +241,7 @@ title(tss)
 legend(hk,ts(1:nint,:),'location','northwest')
 shg
 
-%% Plot time s
+%% Plot time series of 13-year fits
 % series of shorelines and fit for a single transect
 i = 280 % pick a transect number in idx
 figure(4); clf
@@ -265,4 +265,51 @@ t = [transects(idx(i)).t(jdx)];
 [a,b,r2,sa,sb,hdot]=lsfit(t,Y,1);
 datetick
 ylabel('<- Erosion (m) Depostion ->')
+
+%% Make a running nyr fit and plot
+% there are some hard-wired parameters in this plot
+i = 280 % pick a transect number in idx
+ts=[' 3 years'; ' 7 years';'13 years']
+cols = [grays(2,:);blues(3,:);purples(5,:)]
+figure(5); clf
+tz = [datenum(1985,1,1):datenum(2020,1,1)];
+zz = zeros(size(tz))
+plot(tz,zz,'--k')
+hold on
+for ik = 1:length(ylen)
+    yfirst = 1984:2021-ylen(ik)
+    nyr = nan*ones(length(yfirst),1);
+    ymid = nyr;
+    scr = nyr;
+    scr90 = nyr;
+    r2a = nyr;
+    Na = nyr;
+    for k = 1:length(yfirst)
+        ystrt = datenum(yfirst(k),1,1);
+        yend =  datenum(yfirst(k)+ylen(ik),1,1);
+        ymid(k) = datenum(yfirst(k)+0.5*ylen(ik),1,1);
+
+        jdx = [find([transects(idx(i)).t(:)]>=ystrt,  1,'first'):...
+            find([transects(idx(i)).t(:)]< yend,1,'last')]; %time interval
+        N = length(jdx);
+        Y = [transects(idx(i)).Y(jdx)];
+        t = [transects(idx(i)).t(jdx)];
+        % linear fit to shoreline change
+        [a,b,r2,sa,sb,hdot]=lsfit(t,Y,0);
+        tstat = tinv(1-.05/2,N-2.);
+        scr(k) = b*365.25; % convert slope to m/year
+        scr90(k) = tstat*sb*365.25; % 90% confidence interval on slope
+        r2a(k) = r2;
+    end
+    hk(ik)=plot(ymid, scr,'-','linewidth',3,'color',cols(ik,:))
+    hold on
+    plot(ymid, scr+scr90,'-','linewidth',1,'color',cols(ik,:));
+    plot(ymid, scr-scr90,'-','linewidth',1,'color',cols(ik,:));
+end
+ylabel('<- Erosion (m/y) Depostion ->')
+datetick
+tss = sprintf('%s at alongshore = %4.1f km',lc_name,dalong(i))
+title(tss)
+legend(hk,ts(1:nint,:),'location','northwest')
+shg
 
