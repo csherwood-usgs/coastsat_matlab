@@ -269,6 +269,7 @@ ylabel('<- Erosion (m) Depostion ->')
 %% Make a running nyr fit and plot
 % there are some hard-wired parameters in this plot
 i = 280 % pick a transect number in idx
+ylen = [3, 7, 13];
 ts=[' 3 years'; ' 7 years';'13 years']
 cols = [grays(2,:);blues(3,:);purples(5,:)]
 figure(5); clf
